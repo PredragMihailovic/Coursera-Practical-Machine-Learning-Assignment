@@ -1,0 +1,93 @@
+---
+title: "Practical Machine Learning WriteUp"
+author: "Predrag Mihailovic"
+date: "May 10, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Asignment
+In this project, I have to develop a machine learning algorythm to predict how well 6 participants do the activities.
+
+The training data is https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+
+Testing should be performed on https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+
+Data source is  http://groupware.les.inf.puc-rio.br/har
+
+
+### Reading the files, and cleaning the data
+```{r}
+rawData=read.csv('pml-training.csv',na.strings=c('','NA'))
+cleanedData=rawData[,!apply(rawData,2,function(x) any(is.na(x)) )]
+mData=cleanedData[,-c(1:7)]
+```
+
+
+### Training
+
+Necessary packages
+
+```{r }
+library('randomForest')
+library('caret')
+library('e1071')
+```
+
+
+Testing data will be divided in two groups. The first will be 0.6
+```{r }
+partititions=createDataPartition(y=mData$classe, p=0.6, list=FALSE)
+trainingData=mData[partititions,]
+testingData=mData[-partititions, ]
+dim(trainingData);dim(testingData)
+```
+
+So there are 11776 record in the first group and 7846 in the second
+
+Using Random Forest paradigm I predict outcome
+
+```{r }
+model=randomForest(classe~., data=trainingData, method='class')
+pred=predict(model,testingData, type='class')
+matrixData=confusionMatrix(pred,testingData$classe)
+save(matrixData,file='matrixData.RData')
+```
+
+```{r }
+setwd('E:/Personal/Coursera/projects')
+load('matrixData.RData')
+matrixData$table
+```
+
+Check the accuracy
+```{r }
+matrixData$overall[1]
+```
+
+So the accuracy is 99.31%, and the error rate will be .69%
+
+### Prediction
+
+Reading testing data set
+```{r }
+rawDataTest=read.csv('pml-testing.csv',na.strings=c('','NA'))
+cleanedDataTest=rawDataTest[,!apply(rawDataTest,2,function(x) any(is.na(x)) )]
+mDataTest=cleanedDataTest[,-c(1:7)]
+```
+
+Analyse
+```{r }
+predictedData=predict(model,mDataTest,type='class')
+save(predictedData,file='predictedData.RData')
+```
+
+And finally
+```{r }
+setwd('E:/Personal/Coursera/projects')
+load('predictedData.RData')
+print(predictedData)
+```
